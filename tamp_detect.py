@@ -49,7 +49,6 @@ def ocr_pan(image):
 
 
 # Extract data from OCR results
-# Extract data from OCR results
 def extract_data(df):
     extracted_data = {
         "PAN": "Not Found",
@@ -65,7 +64,7 @@ def extract_data(df):
 
     # Enhanced regex patterns for accurate extraction with variations
     pan_pattern = r"\b(?:PAN|P4N|PАН|P/N)[: \t]*([0-9A-Za-z]{9})\b"
-    name_pattern = r"(?:Name|नाम)[: \t]*(.*)"
+    name_pattern = r"(?:Name|नाम)[: \t]*([A-Za-z\s.अ-हाि-्]*)"
     address_pattern = r"(?:Address|Addressः|Aadess|ठेगाना)[: \t]*(.*)"
     dob_pattern = r"(?:Date Of Birth|DOB|जन्म मिति)[: \t]*([\d./-]+)"
     id_no_pattern = r"(?:ID No|आईडी नं)[: \t]*([A-Za-z0-9-]+)"
@@ -78,20 +77,23 @@ def extract_data(df):
         print(f"Detected Text: {row['text']}")
 
     # Iterate through text to extract key-value pairs
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
         text = row["text"].strip()
 
         # Extract PAN
         if re.search(pan_pattern, text):
             extracted_data["PAN"] = re.search(pan_pattern, text).group(1)
 
-        # Extract Name (improved handling for cases without colon)
-        elif re.search(r"(?:Name|नाम)[\s:]*([A-Za-z\s.]+)", text, re.IGNORECASE):
-            name = (
-                re.search(r"(?:Name|नाम)[\s:]*([A-Za-z\s.]+)", text, re.IGNORECASE)
-                .group(1)
-                .strip()
-            )
+        # Extract Name (even if it appears on the next line)
+        elif re.search(r"(?:Name|नाम)[:\s]*$", text, re.IGNORECASE):
+            next_index = idx + 1
+            if next_index < len(df):
+                next_text = df.iloc[next_index]["text"].strip()
+                # Include Nepali characters in the name pattern
+                if re.match(r"^[A-Za-z\s.अ-हाि-्]+$", next_text):
+                    temp_name.append(next_text)
+        elif re.search(name_pattern, text, re.IGNORECASE):
+            name = re.search(name_pattern, text).group(1).strip()
             if name:
                 temp_name.append(name)
 
@@ -208,5 +210,5 @@ def main(image_path):
 
 # Run the main function
 if __name__ == "__main__":
-    image_path = "sample data/pan1_sample.png"
+    image_path = "images"
     main(image_path)
