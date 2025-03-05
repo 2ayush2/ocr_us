@@ -49,7 +49,6 @@ def ocr_pan(image):
 
 
 # Extract data from OCR results
-# Extract data from OCR results
 def extract_data(df):
     extracted_data = {
         "PAN": "Not Found",
@@ -65,12 +64,12 @@ def extract_data(df):
 
     # Enhanced regex patterns for accurate extraction with variations
     pan_pattern = r"\b(?:PAN|P4N|PАН|P/N)[: \t]*([0-9A-Za-z]{9})\b"
-    name_pattern = r"(?:Name|नाम)[: \t]*(.*)"
-    address_pattern = r"(?:Address|Addressः|Aadess|ठेगाना)[: \t]*(.*)"
-    dob_pattern = r"(?:Date Of Birth|DOB|जन्म मिति)[: \t]*([\d./-]+)"
-    id_no_pattern = r"(?:ID No|आईडी नं)[: \t]*([A-Za-z0-9-]+)"
-    issued_date_pattern = r"(?:Issued Date|जारी मिति)?[: \t]*([\d./-]+)"
-    org_pattern = r"(?:Organization|Organization;|संस्था|करदाता सेवा कार्यालय)[: \t]*(.*)"
+    name_pattern = r"^(?:Name|नाम)[: \t]*(.*)"
+    address_pattern = r"^(?:Address|Addressः|Aadess|ठेगाना)[: \t]*(.*)"
+    dob_pattern = r"^(?:Date Of Birth|DOB|जन्म मिति)[: \t]*([\d./-]+)"
+    id_no_pattern = r"^(?:ID No|आईडी नं)[: \t]*([A-Za-z0-9-]+)"
+    issued_date_pattern = r"^(?:Issued Date|Issued Date:|जारी मिति)[: \t]*([\d./-]+)"
+    org_pattern = r"^(?:Organization|Organization;|संस्था|करदाता सेवा कार्यालय)[: \t]*(.*)"
 
     # Print all extracted text for debugging
     print("\nExtracted Text from OCR:")
@@ -85,20 +84,16 @@ def extract_data(df):
         if re.search(pan_pattern, text):
             extracted_data["PAN"] = re.search(pan_pattern, text).group(1)
 
-        # Extract Name (improved handling for cases without colon)
-        elif re.search(r"(?:Name|नाम)[\s:]*([A-Za-z\s.]+)", text, re.IGNORECASE):
-            name = (
-                re.search(r"(?:Name|नाम)[\s:]*([A-Za-z\s.]+)", text, re.IGNORECASE)
-                .group(1)
-                .strip()
-            )
+        # Extract Name
+        elif re.search(name_pattern, text, re.IGNORECASE):
+            name = re.search(name_pattern, text).group(1).strip()
             if name:
                 temp_name.append(name)
 
-        # Extract Address (handle variations like "ः")
+        # Extract Address
         elif re.search(address_pattern, text, re.IGNORECASE):
             address = re.search(address_pattern, text).group(1).strip()
-            if address and address != "ः":
+            if address:
                 temp_address.append(address)
 
         # Extract Date of Birth
@@ -111,9 +106,7 @@ def extract_data(df):
         elif re.search(id_no_pattern, text, re.IGNORECASE):
             extracted_data["ID No"] = re.search(id_no_pattern, text).group(1).strip()
 
-        # Extract Issued Date (standalone date support)
-        if re.search(r"^\d{4}[-./]\d{2}[-./]\d{2}$", text):
-            extracted_data["Issued Date"] = text.strip()
+        # Extract Issued Date
         elif re.search(issued_date_pattern, text, re.IGNORECASE):
             date_match = re.search(issued_date_pattern, text)
             if date_match:
